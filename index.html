@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Laravel Bcrypt Hash Generator</title>
+
+    <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Tailwind Configuration for Fonts & Laravel Accent -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
+                    colors: {
+                        laravel: {
+                            DEFAULT: '#FF2D20',
+                            hover: '#E02418',
+                        },
+                    },
+                },
+            },
+        };
+    </script>
+
+    <!-- bcryptjs CDN for client-side Bcrypt hashing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js"></script>
+</head>
+
+<body
+    class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-rose-50/70 text-slate-800 font-sans antialiased flex flex-col items-center justify-center p-4 sm:p-6 selection:bg-rose-100 selection:text-laravel">
+
+    <!-- Subtle Background Decorative Glows -->
+    <div class="fixed inset-0 -z-10 overflow-hidden pointer-events-none" aria-hidden="true">
+        <div class="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-rose-200/30 blur-3xl"></div>
+        <div class="absolute -bottom-24 -left-24 w-96 h-96 rounded-full bg-slate-200/40 blur-3xl"></div>
+    </div>
+
+    <!-- Main Card -->
+    <main
+        class="w-full max-w-lg bg-white rounded-3xl shadow-xl shadow-slate-200/70 border border-slate-200/80 overflow-hidden">
+
+        <!-- Header -->
+        <header class="px-6 pt-7 pb-5 sm:px-8 border-b border-slate-100 bg-gradient-to-b from-white to-slate-50/50">
+            <div class="flex items-center justify-between gap-4">
+                <div class="flex items-center gap-3.5">
+                    <!-- Lock Icon -->
+                    <div
+                        class="w-11 h-11 rounded-2xl bg-laravel text-white flex items-center justify-center shadow-md shadow-rose-500/25 shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 leading-tight">
+                            Laravel Bcrypt
+                        </h1>
+                        <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
+                            Convert any number or password to a <code
+                                class="font-mono text-laravel font-medium">$2y$</code> hash
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Local Privacy Badge -->
+                <span
+                    class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/70">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    Local
+                </span>
+            </div>
+        </header>
+
+        <!-- Body -->
+        <div class="p-6 sm:p-8 space-y-5">
+
+            <!-- Password / Number Input -->
+            <div>
+                <label for="plainInput" class="block text-sm font-semibold text-slate-700 mb-2">
+                    Password or Number
+                </label>
+                <div class="relative">
+                    <input id="plainInput" type="text" autocomplete="off"
+                        placeholder="Enter any number or password (e.g. 123456)"
+                        class="w-full pl-4 pr-12 py-3.5 rounded-2xl border border-slate-200 bg-slate-50/50 text-slate-900 placeholder-slate-400 text-sm sm:text-base focus:bg-white focus:outline-none focus:ring-4 focus:ring-rose-500/10 focus:border-laravel transition-all" />
+                    <!-- Show / Hide Eye Toggle -->
+                    <button type="button" onclick="toggleVisibility()" aria-label="Toggle visibility"
+                        class="absolute right-2.5 top-1/2 -translate-y-1/2 p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors">
+                        <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                        </svg>
+                    </button>
+                </div>
+                <!-- Inline Validation Error -->
+                <p id="generateError" class="hidden mt-2 text-xs font-medium text-rose-600"></p>
+            </div>
+
+            <!-- Generate Button -->
+            <button id="btnGenerate" type="button" onclick="generateHash()"
+                class="w-full py-3.5 px-5 rounded-2xl bg-laravel hover:bg-laravel-hover active:scale-[0.99] text-white font-semibold text-sm sm:text-base shadow-lg shadow-rose-500/25 transition-all duration-200 flex items-center justify-center gap-2.5 disabled:opacity-70 disabled:cursor-not-allowed">
+                <svg id="generateSpinner" class="hidden animate-spin w-5 h-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                    </path>
+                </svg>
+                <span id="generateBtnText">Generate Hash</span>
+            </button>
+
+            <!-- Result Output Box -->
+            <div id="resultContainer" class="hidden space-y-2.5 pt-1">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400">
+                        Generated Hash
+                    </span>
+                    <span class="text-xs font-mono text-slate-400">
+                        Laravel Default (12)
+                    </span>
+                </div>
+
+                <!-- Click-anywhere-to-copy Dark Box -->
+                <div id="hashOutputBox" onclick="copyHashToClipboard()" role="button" tabindex="0"
+                    title="Click anywhere to copy hash"
+                    class="group relative p-4 sm:p-5 rounded-2xl bg-slate-900 text-slate-100 border-2 border-slate-800 hover:border-laravel/70 cursor-pointer transition-all duration-200 shadow-inner">
+                    <div class="flex items-start justify-between gap-3">
+                        <p id="hashOutputText"
+                            class="font-mono text-xs sm:text-sm leading-relaxed break-all text-rose-100 select-all pr-2">
+                        </p>
+
+                        <!-- Dedicated Copy Button -->
+                        <button id="btnCopy" type="button" onclick="event.stopPropagation(); copyHashToClipboard();"
+                            class="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all">
+                            <!-- Copy Icon -->
+                            <svg id="copyIcon" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                            <!-- Check Icon -->
+                            <svg id="checkIcon" xmlns="http://www.w3.org/2000/svg"
+                                class="hidden w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span id="copyBtnLabel">Copy</span>
+                        </button>
+                    </div>
+
+                    <!-- Click-to-copy Hint -->
+                    <div
+                        class="mt-3 pt-3 border-t border-slate-800/90 flex items-center gap-1.5 text-[11px] text-slate-400 group-hover:text-slate-200 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-laravel" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5" />
+                        </svg>
+                        <span>Click anywhere on this box to copy</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="px-6 py-4 sm:px-8 bg-slate-50/80 border-t border-slate-100 text-center text-xs text-slate-400">
+            100% compatible with Laravel <code class="font-mono text-slate-600">Hash::check()</code>
+        </footer>
+    </main>
+
+    <!-- Floating Toast Notification -->
+    <div id="toast" role="status" aria-live="polite"
+        class="fixed bottom-6 left-1/2 -translate-x-1/2 translate-y-20 opacity-0 pointer-events-none transition-all duration-300 z-50 flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-slate-900 text-white text-sm font-medium shadow-2xl border border-slate-700/80">
+        <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor" stroke-width="3">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+        </span>
+        <span id="toastMessage">Hash copied to clipboard!</span>
+    </div>
+
+    <!-- Application Script -->
+    <script>
+        // Laravel's default Bcrypt salt rounds
+        const SALT_ROUNDS = 12;
+
+        let currentGeneratedHash = '';
+        let toastTimeout = null;
+        let copyResetTimeout = null;
+
+        /**
+         * Toggles input visibility between text and password.
+         */
+        function toggleVisibility() {
+            const input = document.getElementById('plainInput');
+            const icon = document.getElementById('eyeIcon');
+            const isText = input.type === 'text';
+
+            input.type = isText ? 'password' : 'text';
+
+            if (isText) {
+                icon.innerHTML = `
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        `;
+            } else {
+                icon.innerHTML = `
+          <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+        `;
+            }
+        }
+
+        /**
+         * Generates a Laravel-compatible ($2y$) Bcrypt hash asynchronously.
+         */
+        function generateHash() {
+            const inputEl = document.getElementById('plainInput');
+            const errorEl = document.getElementById('generateError');
+            const btn = document.getElementById('btnGenerate');
+            const spinner = document.getElementById('generateSpinner');
+            const btnText = document.getElementById('generateBtnText');
+            const resultContainer = document.getElementById('resultContainer');
+            const hashOutputText = document.getElementById('hashOutputText');
+
+            const password = inputEl.value;
+
+            errorEl.classList.add('hidden');
+            errorEl.textContent = '';
+
+            if (!password) {
+                errorEl.textContent = 'Please enter a number or password first.';
+                errorEl.classList.remove('hidden');
+                inputEl.focus();
+                return;
+            }
+
+            if (typeof dcodeIO === 'undefined' || !dcodeIO.bcrypt) {
+                errorEl.textContent = 'Bcrypt library failed to load. Please check your internet connection.';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+
+            const bcrypt = dcodeIO.bcrypt;
+
+            // Loading state
+            btn.disabled = true;
+            spinner.classList.remove('hidden');
+            btnText.textContent = 'Generating...';
+
+            try {
+                bcrypt.genSalt(SALT_ROUNDS, function (saltErr, salt) {
+                    if (saltErr) {
+                        resetButton();
+                        errorEl.textContent = 'Error generating salt: ' + saltErr.message;
+                        errorEl.classList.remove('hidden');
+                        return;
+                    }
+
+                    bcrypt.hash(password, salt, function (hashErr, hash) {
+                        resetButton();
+
+                        if (hashErr) {
+                            errorEl.textContent = 'Error generating hash: ' + hashErr.message;
+                            errorEl.classList.remove('hidden');
+                            return;
+                        }
+
+                        // Replace $2a$ with Laravel's $2y$ prefix
+                        const laravelHash = hash.replace(/^\$2a\$/, '$2y$');
+                        currentGeneratedHash = laravelHash;
+
+                        hashOutputText.textContent = laravelHash;
+                        resultContainer.classList.remove('hidden');
+                        resetCopyButtonUI();
+                    });
+                });
+            } catch (err) {
+                resetButton();
+                errorEl.textContent = 'Unexpected error: ' + err.message;
+                errorEl.classList.remove('hidden');
+            }
+
+            function resetButton() {
+                btn.disabled = false;
+                spinner.classList.add('hidden');
+                btnText.textContent = 'Generate Hash';
+            }
+        }
+
+        /**
+         * Copies the generated hash to clipboard (Clipboard API + execCommand fallback).
+         */
+        function copyHashToClipboard() {
+            if (!currentGeneratedHash) return;
+
+            const onSuccess = () => {
+                showCopiedUI();
+                showToast('Hash copied to clipboard!');
+            };
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(currentGeneratedHash)
+                    .then(onSuccess)
+                    .catch(() => fallbackCopyText(currentGeneratedHash, onSuccess));
+            } else {
+                fallbackCopyText(currentGeneratedHash, onSuccess);
+            }
+        }
+
+        /**
+         * Fallback copy mechanism for iframes or non-secure contexts.
+         */
+        function fallbackCopyText(text, callback) {
+            try {
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                textArea.style.position = 'fixed';
+                textArea.style.top = '-9999px';
+                textArea.style.left = '-9999px';
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                const successful = document.execCommand('copy');
+                document.body.removeChild(textArea);
+
+                if (successful && typeof callback === 'function') {
+                    callback();
+                }
+            } catch (err) {
+                showToast('Unable to copy automatically. Please copy manually.');
+            }
+        }
+
+        /**
+         * Updates Copy button to green "Copied!" state.
+         */
+        function showCopiedUI() {
+            const copyIcon = document.getElementById('copyIcon');
+            const checkIcon = document.getElementById('checkIcon');
+            const copyBtnLabel = document.getElementById('copyBtnLabel');
+            const btnCopy = document.getElementById('btnCopy');
+
+            copyIcon.classList.add('hidden');
+            checkIcon.classList.remove('hidden');
+            copyBtnLabel.textContent = 'Copied!';
+            btnCopy.classList.add('border-emerald-500/60', 'bg-emerald-500/10', 'text-emerald-300');
+            btnCopy.classList.remove('bg-slate-800', 'text-slate-200', 'border-slate-700');
+
+            clearTimeout(copyResetTimeout);
+            copyResetTimeout = setTimeout(resetCopyButtonUI, 2200);
+        }
+
+        /**
+         * Resets Copy button back to default state.
+         */
+        function resetCopyButtonUI() {
+            const copyIcon = document.getElementById('copyIcon');
+            const checkIcon = document.getElementById('checkIcon');
+            const copyBtnLabel = document.getElementById('copyBtnLabel');
+            const btnCopy = document.getElementById('btnCopy');
+
+            copyIcon.classList.remove('hidden');
+            checkIcon.classList.add('hidden');
+            copyBtnLabel.textContent = 'Copy';
+            btnCopy.classList.remove('border-emerald-500/60', 'bg-emerald-500/10', 'text-emerald-300');
+            btnCopy.classList.add('bg-slate-800', 'text-slate-200', 'border-slate-700');
+        }
+
+        /**
+         * Shows the floating toast notification.
+         */
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+
+            toastMessage.textContent = message;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+                toast.classList.remove('translate-y-0', 'opacity-100');
+            }, 2400);
+        }
+
+        // Keyboard shortcuts: Enter to generate, Enter/Space on output box to copy
+        document.getElementById('plainInput').addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                generateHash();
+            }
+        });
+
+        document.getElementById('hashOutputBox').addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                copyHashToClipboard();
+            }
+        });
+    </script>
+</body>
+
+</html>
